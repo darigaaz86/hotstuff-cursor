@@ -141,7 +141,7 @@ func createTestTransactions(accounts map[txpool.Address]*big.Int) []*txpool.Tran
 			Nonce:    0,
 			GasPrice: big.NewInt(2000000000), // 2 gwei
 			GasLimit: 21000,
-			To:       &addrs[3], // to account 4
+			To:       &addrs[3],                       // to account 4
 			Value:    big.NewInt(1000000000000000000), // 1 ETH
 			Data:     []byte{},
 			ChainID:  big.NewInt(1337),
@@ -151,7 +151,7 @@ func createTestTransactions(accounts map[txpool.Address]*big.Int) []*txpool.Tran
 			Nonce:    0,
 			GasPrice: big.NewInt(3000000000), // 3 gwei (higher priority)
 			GasLimit: 21000,
-			To:       &addrs[3], // to account 4
+			To:       &addrs[3],                      // to account 4
 			Value:    big.NewInt(500000000000000000), // 0.5 ETH
 			Data:     []byte{},
 			ChainID:  big.NewInt(1337),

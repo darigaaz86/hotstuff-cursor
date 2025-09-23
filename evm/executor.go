@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/relab/hotstuff"
 	"github.com/relab/hotstuff/logging"
 	"github.com/relab/hotstuff/txpool"
 )
@@ -192,86 +191,24 @@ func (e *Executor) applyTransaction(tx *txpool.Transaction, stateDB StateDB,
 	return receipt, nil
 }
 
-// createContract handles contract creation transactions
+// createContract handles contract creation transactions (now delegated to simple_vm.go)
 func (e *Executor) createContract(tx *txpool.Transaction, stateDB StateDB, from txpool.Address) (*txpool.Address, uint64, []*Log, error) {
-	// Generate contract address (simplified)
-	nonce := stateDB.GetNonce(from) - 1 // We already incremented it
-	contractAddr := e.generateContractAddress(from, nonce)
-
-	// Create the contract account
-	stateDB.CreateAccount(contractAddr)
-
-	// Transfer value if any
-	if tx.Value.Sign() > 0 {
-		stateDB.SubBalance(from, tx.Value)
-		stateDB.AddBalance(contractAddr, tx.Value)
-	}
-
-	// Set contract code (simplified - just store the data as code)
-	if len(tx.Data) > 0 {
-		stateDB.SetCode(contractAddr, tx.Data)
-	}
-
-	// Simplified gas calculation (21000 base + 32000 for contract creation + code storage)
-	gasUsed := uint64(21000 + 32000 + len(tx.Data)*200)
-
-	// Create a contract creation log
-	logs := []*Log{
-		{
-			Address:     contractAddr,
-			Topics:      []hotstuff.Hash{}, // Contract creation event
-			Data:        []byte(fmt.Sprintf("Contract created at %s", contractAddr.String())),
-			BlockNumber: tx.Value, // Simplified
-			TxHash:      tx.Hash(),
-			TxIndex:     0,               // Will be set by caller
-			BlockHash:   hotstuff.Hash{}, // Will be set by caller
-			LogIndex:    0,
-			Removed:     false,
-		},
-	}
-
-	e.logger.Infof("Contract created at %s, gas used: %d", contractAddr.String(), gasUsed)
-	return &contractAddr, gasUsed, logs, nil
+	return e.CreateContractWithEVM(tx, stateDB, from)
 }
 
-// callContract handles contract calls and value transfers
+// callContract handles contract calls and value transfers (now delegated to simple_vm.go)
 func (e *Executor) callContract(tx *txpool.Transaction, stateDB StateDB, from txpool.Address) (uint64, []*Log, error) {
-	// Transfer value if any
-	if tx.Value.Sign() > 0 {
-		stateDB.SubBalance(from, tx.Value)
-		stateDB.AddBalance(*tx.To, tx.Value)
+	return e.CallContractWithEVM(tx, stateDB, from)
+}
+
+// formatWei formats wei to ETH string
+func formatWei(wei *big.Int) string {
+	if wei == nil {
+		return "0"
 	}
-
-	// Simplified gas calculation
-	gasUsed := uint64(21000) // Base gas for transfer
-
-	// If there's data, treat it as a contract call
-	if len(tx.Data) > 0 {
-		gasUsed += uint64(len(tx.Data) * 16) // 16 gas per byte
-
-		// Check if target has code (is a contract)
-		if stateDB.GetCodeSize(*tx.To) > 0 {
-			gasUsed += 700 // Additional gas for contract call
-		}
-	}
-
-	// Create a simple transfer log
-	var logs []*Log
-	if tx.Value.Sign() > 0 {
-		logs = append(logs, &Log{
-			Address:     *tx.To,
-			Topics:      []hotstuff.Hash{}, // Transfer event
-			Data:        []byte(fmt.Sprintf("Transfer %s from %s to %s", tx.Value.String(), from.String(), tx.To.String())),
-			BlockNumber: tx.Value, // Simplified
-			TxHash:      tx.Hash(),
-			TxIndex:     0,               // Will be set by caller
-			BlockHash:   hotstuff.Hash{}, // Will be set by caller
-			LogIndex:    0,
-			Removed:     false,
-		})
-	}
-
-	return gasUsed, logs, nil
+	eth := new(big.Float).SetInt(wei)
+	eth.Quo(eth, big.NewFloat(1e18))
+	return fmt.Sprintf("%.6f", eth)
 }
 
 // generateContractAddress generates a contract address from sender and nonce

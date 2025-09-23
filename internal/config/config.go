@@ -75,6 +75,15 @@ type ExperimentConfig struct {
 	// DataDir is the directory for persistent storage data.
 	DataDir string
 
+	// # RPC configuration below:
+
+	// RPC enables JSON-RPC server for Ethereum compatibility.
+	RPC bool
+	// RPCAddr is the JSON-RPC server address.
+	RPCAddr string
+	// RPCCORS enables CORS for JSON-RPC server.
+	RPCCORS bool
+
 	// # Profiling flags below:
 
 	// CpuProfile enables CPU profiling if true.

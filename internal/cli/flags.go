@@ -76,6 +76,11 @@ func init() {
 	// Persistent storage flags
 	runCmd.Flags().Bool("persistent", false, "enable persistent storage using BadgerDB")
 	runCmd.Flags().String("data-dir", "./hotstuff_data", "directory for persistent storage data")
+	
+	// RPC flags
+	runCmd.Flags().Bool("rpc", false, "enable JSON-RPC server for Ethereum compatibility")
+	runCmd.Flags().String("rpc-addr", "127.0.0.1:8545", "JSON-RPC server address")
+	runCmd.Flags().Bool("rpc-cors", true, "enable CORS for JSON-RPC server")
 
 	err := viper.BindPFlags(runCmd.Flags())
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/relab/hotstuff"
 	"github.com/relab/hotstuff/logging"
 )
 
@@ -293,9 +292,14 @@ func (pool *TxPool) GetTransactionsForBlock(maxGas uint64) []*Transaction {
 	return transactions
 }
 
-// ToCommands converts transactions to HotStuff commands
-func (pool *TxPool) ToCommands(transactions []*Transaction) []hotstuff.Command {
-	commands := make([]hotstuff.Command, len(transactions))
+// Command interface for HotStuff compatibility
+type Command interface {
+	ID() string
+}
+
+// ToCommands converts transactions to commands
+func (pool *TxPool) ToCommands(transactions []*Transaction) []Command {
+	commands := make([]Command, len(transactions))
 	for i, tx := range transactions {
 		commands[i] = tx.ToCommand()
 	}

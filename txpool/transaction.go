@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/relab/hotstuff"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -167,20 +166,26 @@ func (tx *Transaction) IsContractCreation() bool {
 	return tx.To == nil
 }
 
-// ToCommand converts the transaction to a HotStuff command
-func (tx *Transaction) ToCommand() hotstuff.Command {
-	data, _ := json.Marshal(tx)
-	return hotstuff.Command(data)
+// ToCommand converts the transaction to a command
+func (tx *Transaction) ToCommand() Command {
+	return &TransactionCommand{tx: tx}
 }
 
-// TransactionFromCommand converts a HotStuff command back to a transaction
-func TransactionFromCommand(cmd hotstuff.Command) (*Transaction, error) {
-	var tx Transaction
-	err := json.Unmarshal([]byte(cmd), &tx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal transaction: %w", err)
+// TransactionCommand implements the Command interface
+type TransactionCommand struct {
+	tx *Transaction
+}
+
+func (tc *TransactionCommand) ID() string {
+	return tc.tx.Hash().String()
+}
+
+// TransactionFromCommand creates a transaction from a command
+func TransactionFromCommand(cmd Command) (*Transaction, error) {
+	if tc, ok := cmd.(*TransactionCommand); ok {
+		return tc.tx, nil
 	}
-	return &tx, nil
+	return nil, fmt.Errorf("invalid command type")
 }
 
 // Validate performs basic validation of the transaction

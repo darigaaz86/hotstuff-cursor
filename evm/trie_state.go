@@ -62,19 +62,19 @@ func (ch trieStorageChange) revert(s *TrieStateDB) {
 type TrieStateDB struct {
 	// World state trie (accounts)
 	stateTrie *trie.MerklePatriciaTrie
-	
+
 	// Storage tries for contracts (per account)
 	storageTries map[txpool.Address]*trie.MerklePatriciaTrie
-	
+
 	// Database for persistence
 	db trie.Database
-	
+
 	// Journal for rollback support
 	journal []trieStateChange
-	
+
 	// Snapshots for nested transactions
 	snapshots []int
-	
+
 	logger logging.Logger
 }
 
@@ -105,9 +105,9 @@ func NewTrieStateDBWithRoot(db trie.Database, stateRoot hotstuff.Hash) (*TrieSta
 	if err != nil {
 		return nil, fmt.Errorf("failed to load state root: %w", err)
 	}
-	
+
 	stateTrie := trie.NewMerklePatriciaTrieWithRoot(rootNode)
-	
+
 	return &TrieStateDB{
 		stateTrie:    stateTrie,
 		storageTries: make(map[txpool.Address]*trie.MerklePatriciaTrie),
@@ -128,7 +128,7 @@ func (s *TrieStateDB) GetAccount(addr txpool.Address) *AccountState {
 			Nonce:   0,
 		}
 	}
-	
+
 	// Decode account data
 	var accountRLP AccountRLP
 	if err := json.Unmarshal(accountData, &accountRLP); err != nil {
@@ -138,7 +138,7 @@ func (s *TrieStateDB) GetAccount(addr txpool.Address) *AccountState {
 			Nonce:   0,
 		}
 	}
-	
+
 	return &AccountState{
 		Balance:     accountRLP.Balance,
 		Nonce:       accountRLP.Nonce,
@@ -155,13 +155,13 @@ func (s *TrieStateDB) SetAccount(addr txpool.Address, account *AccountState) {
 		StorageRoot: account.StorageRoot,
 		CodeHash:    account.CodeHash,
 	}
-	
+
 	accountData, err := json.Marshal(accountRLP)
 	if err != nil {
 		s.logger.Errorf("Failed to encode account data: %v", err)
 		return
 	}
-	
+
 	if err := s.stateTrie.Put(addr[:], accountData); err != nil {
 		s.logger.Errorf("Failed to store account: %v", err)
 	}
@@ -172,7 +172,7 @@ func (s *TrieStateDB) DeleteAccount(addr txpool.Address) {
 	if err := s.stateTrie.Delete(addr[:]); err != nil {
 		s.logger.Errorf("Failed to delete account: %v", err)
 	}
-	
+
 	// Also remove storage trie
 	delete(s.storageTries, addr)
 }
@@ -186,10 +186,10 @@ func (s *TrieStateDB) GetBalance(addr txpool.Address) *big.Int {
 // SetBalance sets the balance of an account
 func (s *TrieStateDB) SetBalance(addr txpool.Address, balance *big.Int) {
 	account := s.GetAccount(addr)
-	
+
 	// Record change for journal
 	s.journal = append(s.journal, trieBalanceChange{addr, account.Balance})
-	
+
 	account.Balance = new(big.Int).Set(balance)
 	s.SetAccount(addr, account)
 }
@@ -197,10 +197,10 @@ func (s *TrieStateDB) SetBalance(addr txpool.Address, balance *big.Int) {
 // AddBalance adds to the balance of an account
 func (s *TrieStateDB) AddBalance(addr txpool.Address, amount *big.Int) {
 	account := s.GetAccount(addr)
-	
+
 	// Record change for journal
 	s.journal = append(s.journal, trieBalanceChange{addr, account.Balance})
-	
+
 	account.Balance = new(big.Int).Add(account.Balance, amount)
 	s.SetAccount(addr, account)
 }
@@ -208,10 +208,10 @@ func (s *TrieStateDB) AddBalance(addr txpool.Address, amount *big.Int) {
 // SubBalance subtracts from the balance of an account
 func (s *TrieStateDB) SubBalance(addr txpool.Address, amount *big.Int) {
 	account := s.GetAccount(addr)
-	
+
 	// Record change for journal
 	s.journal = append(s.journal, trieBalanceChange{addr, account.Balance})
-	
+
 	account.Balance = new(big.Int).Sub(account.Balance, amount)
 	s.SetAccount(addr, account)
 }
@@ -225,10 +225,10 @@ func (s *TrieStateDB) GetNonce(addr txpool.Address) uint64 {
 // SetNonce sets the nonce of an account
 func (s *TrieStateDB) SetNonce(addr txpool.Address, nonce uint64) {
 	account := s.GetAccount(addr)
-	
+
 	// Record change for journal
 	s.journal = append(s.journal, trieNonceChange{addr, account.Nonce})
-	
+
 	account.Nonce = nonce
 	s.SetAccount(addr, account)
 }
@@ -239,25 +239,25 @@ func (s *TrieStateDB) GetCode(addr txpool.Address) []byte {
 	if account.CodeHash == (hotstuff.Hash{}) {
 		return []byte{}
 	}
-	
+
 	// Load code from database
 	codeKey := append([]byte("code:"), account.CodeHash[:]...)
 	codeData, found := s.stateTrie.Get(codeKey)
 	if !found {
 		return []byte{}
 	}
-	
+
 	return codeData
 }
 
 // SetCode sets the code of an account
 func (s *TrieStateDB) SetCode(addr txpool.Address, code []byte) {
 	account := s.GetAccount(addr)
-	
+
 	// Record change for journal
 	oldCode := s.GetCode(addr)
 	s.journal = append(s.journal, trieCodeChange{addr, oldCode})
-	
+
 	if len(code) == 0 {
 		account.CodeHash = hotstuff.Hash{}
 	} else {
@@ -265,14 +265,14 @@ func (s *TrieStateDB) SetCode(addr txpool.Address, code []byte) {
 		hasher := sha3.NewLegacyKeccak256()
 		hasher.Write(code)
 		copy(account.CodeHash[:], hasher.Sum(nil))
-		
+
 		// Store code in trie
 		codeKey := append([]byte("code:"), account.CodeHash[:]...)
 		if err := s.stateTrie.Put(codeKey, code); err != nil {
 			s.logger.Errorf("Failed to store code: %v", err)
 		}
 	}
-	
+
 	s.SetAccount(addr, account)
 }
 
@@ -293,12 +293,12 @@ func (s *TrieStateDB) GetState(addr txpool.Address, key hotstuff.Hash) hotstuff.
 	if storageTrie == nil {
 		return hotstuff.Hash{}
 	}
-	
+
 	value, found := storageTrie.Get(key[:])
 	if !found {
 		return hotstuff.Hash{}
 	}
-	
+
 	var result hotstuff.Hash
 	copy(result[:], value)
 	return result
@@ -310,11 +310,11 @@ func (s *TrieStateDB) SetState(addr txpool.Address, key, value hotstuff.Hash) {
 	if storageTrie == nil {
 		return
 	}
-	
+
 	// Record change for journal
 	prev := s.GetState(addr, key)
 	s.journal = append(s.journal, trieStorageChange{addr, key, prev})
-	
+
 	if value == (hotstuff.Hash{}) {
 		// Delete the key
 		storageTrie.Delete(key[:])
@@ -322,7 +322,7 @@ func (s *TrieStateDB) SetState(addr txpool.Address, key, value hotstuff.Hash) {
 		// Set the value
 		storageTrie.Put(key[:], value[:])
 	}
-	
+
 	// Update account's storage root
 	account := s.GetAccount(addr)
 	account.StorageRoot = storageTrie.Root()
@@ -334,7 +334,7 @@ func (s *TrieStateDB) getStorageTrie(addr txpool.Address, create bool) *trie.Mer
 	if storageTrie, exists := s.storageTries[addr]; exists {
 		return storageTrie
 	}
-	
+
 	account := s.GetAccount(addr)
 	if account.StorageRoot == (hotstuff.Hash{}) {
 		if !create {
@@ -345,7 +345,7 @@ func (s *TrieStateDB) getStorageTrie(addr txpool.Address, create bool) *trie.Mer
 		s.storageTries[addr] = storageTrie
 		return storageTrie
 	}
-	
+
 	// Load existing storage trie
 	rootNode, err := s.db.Get(account.StorageRoot)
 	if err != nil {
@@ -358,7 +358,7 @@ func (s *TrieStateDB) getStorageTrie(addr txpool.Address, create bool) *trie.Mer
 		s.storageTries[addr] = storageTrie
 		return storageTrie
 	}
-	
+
 	storageTrie := trie.NewMerklePatriciaTrieWithRoot(rootNode)
 	s.storageTries[addr] = storageTrie
 	return storageTrie
@@ -381,9 +381,9 @@ func (s *TrieStateDB) Exist(addr txpool.Address) bool {
 // Empty checks if an account is empty
 func (s *TrieStateDB) Empty(addr txpool.Address) bool {
 	account := s.GetAccount(addr)
-	return account.Nonce == 0 && 
-		   account.Balance.Sign() == 0 && 
-		   account.CodeHash == (hotstuff.Hash{})
+	return account.Nonce == 0 &&
+		account.Balance.Sign() == 0 &&
+		account.CodeHash == (hotstuff.Hash{})
 }
 
 // Snapshot creates a snapshot of the current state
@@ -398,15 +398,15 @@ func (s *TrieStateDB) RevertToSnapshot(id int) {
 	if id < 0 || id >= len(s.snapshots) {
 		return
 	}
-	
+
 	// Get the journal position for this snapshot
 	journalPos := s.snapshots[id]
-	
+
 	// Revert changes
 	for i := len(s.journal) - 1; i >= journalPos; i-- {
 		s.journal[i].revert(s)
 	}
-	
+
 	// Truncate journal and snapshots
 	s.journal = s.journal[:journalPos]
 	s.snapshots = s.snapshots[:id]
@@ -423,22 +423,22 @@ func (s *TrieStateDB) Commit() (hotstuff.Hash, error) {
 				return hotstuff.Hash{}, fmt.Errorf("failed to commit storage trie: %w", err)
 			}
 		}
-		
+
 		// Update account storage root
 		account := s.GetAccount(addr)
 		account.StorageRoot = storageRoot
 		s.SetAccount(addr, account)
 	}
-	
+
 	// Commit state trie
 	if err := s.commitTrie(s.stateTrie); err != nil {
 		return hotstuff.Hash{}, fmt.Errorf("failed to commit state trie: %w", err)
 	}
-	
+
 	// Clear journal
 	s.journal = s.journal[:0]
 	s.snapshots = s.snapshots[:0]
-	
+
 	return s.stateTrie.Root(), nil
 }
 
@@ -446,15 +446,15 @@ func (s *TrieStateDB) Commit() (hotstuff.Hash, error) {
 func (s *TrieStateDB) commitTrie(t *trie.MerklePatriciaTrie) error {
 	// This is a simplified commit - in a full implementation,
 	// we would traverse the trie and store all dirty nodes
-	
+
 	root := t.Root()
 	if root == (hotstuff.Hash{}) {
 		return nil
 	}
-	
+
 	// For now, we'll use a simplified approach where the trie
 	// manages its own persistence through the database interface
-	
+
 	return nil
 }
 
@@ -468,12 +468,12 @@ func (s *TrieStateDB) Copy() StateDB {
 		snapshots:    make([]int, 0),
 		logger:       s.logger,
 	}
-	
+
 	// Copy storage tries
 	for addr, storageTrie := range s.storageTries {
 		newState.storageTries[addr] = storageTrie.Copy()
 	}
-	
+
 	return newState
 }
 
@@ -488,7 +488,7 @@ func (s *TrieStateDB) GetStorageProof(addr txpool.Address, key hotstuff.Hash) ([
 	if storageTrie == nil {
 		return nil, fmt.Errorf("no storage trie for account")
 	}
-	
+
 	return storageTrie.Prove(key[:])
 }
 
@@ -500,24 +500,24 @@ func (s *TrieStateDB) GetAccountProof(addr txpool.Address) ([][]byte, error) {
 // Stats returns statistics about the state database
 func (s *TrieStateDB) Stats() TrieStateStats {
 	stateStats := s.stateTrie.Stats()
-	
+
 	stats := TrieStateStats{
 		StateTrieStats: stateStats,
 		StorageTries:   len(s.storageTries),
 		JournalSize:    len(s.journal),
 		SnapshotCount:  len(s.snapshots),
 	}
-	
+
 	// Collect storage trie stats
 	for _, storageTrie := range s.storageTries {
 		storageStats := storageTrie.Stats()
 		stats.TotalStorageNodes += storageStats.NodeCount
 	}
-	
+
 	if s.db != nil {
 		stats.DatabaseStats = s.db.Stats()
 	}
-	
+
 	return stats
 }
 
@@ -533,7 +533,7 @@ type TrieStateStats struct {
 
 // String returns a string representation of the stats
 func (s TrieStateStats) String() string {
-	return fmt.Sprintf("TrieState(nodes=%d, storage_tries=%d, storage_nodes=%d, journal=%d, snapshots=%d)", 
+	return fmt.Sprintf("TrieState(nodes=%d, storage_tries=%d, storage_nodes=%d, journal=%d, snapshots=%d)",
 		s.StateTrieStats.NodeCount,
 		s.StorageTries,
 		s.TotalStorageNodes,
@@ -549,13 +549,13 @@ func (s *TrieStateDB) SetupGenesisAccounts() {
 		"0x1000000000000000000000000000000000000002": big.NewInt(2000000000000000000), // 2 ETH
 		"0x1000000000000000000000000000000000000003": big.NewInt(5000000000000000000), // 5 ETH
 	}
-	
+
 	for addrStr, balance := range testAccounts {
 		var addr txpool.Address
 		fmt.Sscanf(addrStr, "0x%40x", &addr)
 		s.CreateAccount(addr)
 		s.SetBalance(addr, balance)
 	}
-	
+
 	s.logger.Infof("Created %d genesis accounts", len(testAccounts))
 }

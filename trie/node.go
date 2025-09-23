@@ -104,7 +104,7 @@ func (n *BranchNodeStruct) calculateHash() hotstuff.Hash {
 	hasher := sha3.NewLegacyKeccak256()
 	encoded := n.Encode()
 	hasher.Write(encoded)
-	
+
 	var hash hotstuff.Hash
 	copy(hash[:], hasher.Sum(nil))
 	return hash
@@ -112,10 +112,10 @@ func (n *BranchNodeStruct) calculateHash() hotstuff.Hash {
 
 func (n *BranchNodeStruct) Encode() []byte {
 	var buf bytes.Buffer
-	
+
 	// Encode type
 	buf.WriteByte(byte(BranchNode))
-	
+
 	// Encode children hashes
 	for _, child := range n.Children {
 		if child == nil || child.Type() == EmptyNode {
@@ -125,7 +125,7 @@ func (n *BranchNodeStruct) Encode() []byte {
 			buf.Write(hash[:])
 		}
 	}
-	
+
 	// Encode value length and value
 	if len(n.Value) > 0 {
 		buf.WriteByte(byte(len(n.Value)))
@@ -133,7 +133,7 @@ func (n *BranchNodeStruct) Encode() []byte {
 	} else {
 		buf.WriteByte(0)
 	}
-	
+
 	return buf.Bytes()
 }
 
@@ -144,12 +144,12 @@ func (n *BranchNodeStruct) String() string {
 			childCount++
 		}
 	}
-	
+
 	valueStr := ""
 	if len(n.Value) > 0 {
 		valueStr = fmt.Sprintf(", value=%d bytes", len(n.Value))
 	}
-	
+
 	return fmt.Sprintf("Branch(children=%d%s)", childCount, valueStr)
 }
 
@@ -163,9 +163,9 @@ func (n *BranchNodeStruct) SetChild(index int, child Node) {
 func (n *BranchNodeStruct) GetChild(index int) Node {
 	if index >= 0 && index < 16 {
 		child := n.Children[index]
-	if child == nil {
-		return EmptyNodeInstance
-	}
+		if child == nil {
+			return EmptyNodeInstance
+		}
 		return child
 	}
 	return EmptyNodeInstance
@@ -195,7 +195,7 @@ func (n *ExtensionNodeStruct) calculateHash() hotstuff.Hash {
 	hasher := sha3.NewLegacyKeccak256()
 	encoded := n.Encode()
 	hasher.Write(encoded)
-	
+
 	var hash hotstuff.Hash
 	copy(hash[:], hasher.Sum(nil))
 	return hash
@@ -203,14 +203,14 @@ func (n *ExtensionNodeStruct) calculateHash() hotstuff.Hash {
 
 func (n *ExtensionNodeStruct) Encode() []byte {
 	var buf bytes.Buffer
-	
+
 	// Encode type
 	buf.WriteByte(byte(ExtensionNode))
-	
+
 	// Encode key length and key
 	buf.WriteByte(byte(len(n.Key)))
 	buf.Write(n.Key)
-	
+
 	// Encode child hash
 	if n.Child != nil && n.Child.Type() != EmptyNode {
 		hash := n.Child.Hash()
@@ -218,12 +218,12 @@ func (n *ExtensionNodeStruct) Encode() []byte {
 	} else {
 		buf.Write(make([]byte, 32)) // Empty hash
 	}
-	
+
 	return buf.Bytes()
 }
 
 func (n *ExtensionNodeStruct) String() string {
-	return fmt.Sprintf("Extension(key=%s, child=%s)", 
+	return fmt.Sprintf("Extension(key=%s, child=%s)",
 		hex.EncodeToString(n.Key), n.Child.String())
 }
 
@@ -245,7 +245,7 @@ func (n *LeafNodeStruct) calculateHash() hotstuff.Hash {
 	hasher := sha3.NewLegacyKeccak256()
 	encoded := n.Encode()
 	hasher.Write(encoded)
-	
+
 	var hash hotstuff.Hash
 	copy(hash[:], hasher.Sum(nil))
 	return hash
@@ -253,14 +253,14 @@ func (n *LeafNodeStruct) calculateHash() hotstuff.Hash {
 
 func (n *LeafNodeStruct) Encode() []byte {
 	var buf bytes.Buffer
-	
+
 	// Encode type
 	buf.WriteByte(byte(LeafNode))
-	
+
 	// Encode key length and key
 	buf.WriteByte(byte(len(n.Key)))
 	buf.Write(n.Key)
-	
+
 	// Encode value length and value
 	valueLen := len(n.Value)
 	if valueLen > 255 {
@@ -272,12 +272,12 @@ func (n *LeafNodeStruct) Encode() []byte {
 		buf.WriteByte(byte(valueLen))
 	}
 	buf.Write(n.Value)
-	
+
 	return buf.Bytes()
 }
 
 func (n *LeafNodeStruct) String() string {
-	return fmt.Sprintf("Leaf(key=%s, value=%d bytes)", 
+	return fmt.Sprintf("Leaf(key=%s, value=%d bytes)",
 		hex.EncodeToString(n.Key), len(n.Value))
 }
 
@@ -316,12 +316,12 @@ func nibblesFromHex(hexStr string) ([]byte, error) {
 	if len(hexStr)%2 != 0 {
 		hexStr = "0" + hexStr // Pad with leading zero
 	}
-	
+
 	bytes, err := hex.DecodeString(hexStr)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return keyToNibbles(bytes), nil
 }
 
@@ -344,7 +344,7 @@ func commonPrefix(a, b []byte) int {
 	if len(b) < minLen {
 		minLen = len(b)
 	}
-	
+
 	for i := 0; i < minLen; i++ {
 		if a[i] != b[i] {
 			return i

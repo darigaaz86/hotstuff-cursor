@@ -16,7 +16,7 @@ type Transaction struct {
 	Nonce    uint64   `json:"nonce"`
 	GasPrice *big.Int `json:"gasPrice"`
 	GasLimit uint64   `json:"gasLimit"`
-	To       *Address `json:"to"`       // nil for contract creation
+	To       *Address `json:"to"` // nil for contract creation
 	Value    *big.Int `json:"value"`
 	Data     []byte   `json:"data"`
 
@@ -29,9 +29,9 @@ type Transaction struct {
 	S *big.Int `json:"s"`
 
 	// Cached values (not serialized)
-	hash Hash      `json:"-"`
-	from *Address  `json:"-"`
-	size uint64    `json:"-"`
+	hash Hash     `json:"-"`
+	from *Address `json:"-"`
+	size uint64   `json:"-"`
 }
 
 // Address represents a 20-byte Ethereum address
@@ -74,11 +74,11 @@ func (tx *Transaction) Hash() Hash {
 // calculateHash computes the Keccak256 hash of the transaction
 func (tx *Transaction) calculateHash() Hash {
 	hasher := sha3.NewLegacyKeccak256()
-	
+
 	// RLP encoding simulation (simplified)
 	data := tx.encodeForHashing()
 	hasher.Write(data)
-	
+
 	var hash Hash
 	copy(hash[:], hasher.Sum(nil))
 	return hash
@@ -115,15 +115,15 @@ func (tx *Transaction) Sign(privateKey *ecdsa.PrivateKey) error {
 	if err != nil {
 		return err
 	}
-	
+
 	tx.V = signedTx.V
 	tx.R = signedTx.R
 	tx.S = signedTx.S
-	
+
 	// Clear cached values
 	tx.hash = Hash{}
 	tx.from = nil
-	
+
 	return nil
 }
 
@@ -132,14 +132,14 @@ func (tx *Transaction) From() (*Address, error) {
 	if tx.from != nil {
 		return tx.from, nil
 	}
-	
+
 	// Recover the sender from the signature
 	signer := NewEIP155Signer(tx.ChainID)
 	from, err := signer.Sender(tx)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	tx.from = from
 	return from, nil
 }
@@ -195,7 +195,7 @@ func (tx *Transaction) Validate() error {
 	if tx.ChainID == nil {
 		return fmt.Errorf("chain ID cannot be nil")
 	}
-	
+
 	// Check for negative values
 	if tx.GasPrice.Sign() < 0 {
 		return fmt.Errorf("gas price cannot be negative")
@@ -203,14 +203,14 @@ func (tx *Transaction) Validate() error {
 	if tx.Value.Sign() < 0 {
 		return fmt.Errorf("value cannot be negative")
 	}
-	
+
 	// Check gas limit
 	if tx.GasLimit == 0 {
 		return fmt.Errorf("gas limit cannot be zero")
 	}
-	
+
 	// Note: Signature verification is simplified for now
 	// In production, proper ECDSA signature verification would be implemented
-	
+
 	return nil
 }

@@ -16,19 +16,19 @@ type Config struct {
 	// Pool limits
 	GlobalSlots uint64 // Maximum number of executable transaction slots for all accounts
 	GlobalQueue uint64 // Maximum number of non-executable transaction slots for all accounts
-	
+
 	// Per-account limits
 	AccountSlots uint64 // Number of executable transaction slots guaranteed per account
 	AccountQueue uint64 // Maximum number of non-executable transaction slots per account
-	
+
 	// Pricing and gas
 	PriceLimit uint64        // Minimum gas price to enforce for acceptance into the pool
 	PriceBump  uint64        // Minimum price bump percentage to replace an already existing transaction (nonce)
 	Lifetime   time.Duration // Maximum amount of time non-executable transactions are queued
-	
+
 	// Journal
-	Journal string // Journal of local transactions to survive node restarts
-	NoLocals bool  // Whether local transaction handling should be disabled
+	Journal  string // Journal of local transactions to survive node restarts
+	NoLocals bool   // Whether local transaction handling should be disabled
 }
 
 // DefaultConfig returns the default configuration for transaction pool
@@ -68,7 +68,7 @@ type TxPool struct {
 
 	// Event subscriptions for new transactions
 	subscribers []chan<- *Transaction
-	
+
 	// Quit channel
 	quit chan struct{}
 }
@@ -140,7 +140,7 @@ func (pool *TxPool) add(tx *Transaction, local bool) error {
 		}
 		pool.all.Add(tx)
 		pool.priced.Put(tx)
-		
+
 		pool.logger.Infof("Replaced transaction hash=%s nonce=%d", tx.Hash().String(), tx.Nonce)
 		pool.notifySubscribers(tx)
 		return nil
@@ -239,7 +239,7 @@ func (pool *TxPool) NextNonce(addr Address) uint64 {
 	if list := pool.pending[addr]; list != nil {
 		return list.LastNonce() + 1
 	}
-	
+
 	// If no pending transactions, return 0 (will need state integration later)
 	return 0
 }
@@ -346,7 +346,7 @@ func (pool *TxPool) cleanup() {
 		}
 	}
 
-	pool.logger.Infof("Transaction pool cleanup completed, pending: %d, queued: %d", 
+	pool.logger.Infof("Transaction pool cleanup completed, pending: %d, queued: %d",
 		pool.stats.pending, pool.stats.queued)
 }
 

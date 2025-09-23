@@ -31,6 +31,7 @@ type Transaction struct {
 ```
 
 **Key Features:**
+
 - ✅ Ethereum-compatible transaction format
 - ✅ EIP-155 replay attack protection
 - ✅ Contract creation support (`To` field can be nil)
@@ -50,6 +51,7 @@ type TxPool struct {
 ```
 
 **Features:**
+
 - ✅ **Pending/Queue Management**: Separates ready vs future transactions
 - ✅ **Gas Price Prioritization**: Miners select highest-paying transactions first
 - ✅ **Nonce Ordering**: Ensures sequential execution per account
@@ -68,6 +70,7 @@ type Signer interface {
 ```
 
 **Implementations:**
+
 - ✅ **EIP155Signer**: Modern Ethereum signing with chain ID protection
 - ✅ **HomesteadSigner**: Legacy signing support
 - ✅ **Address Recovery**: Extract sender from signature
@@ -76,6 +79,7 @@ type Signer interface {
 ### 4. **Data Structures** (`txpool/list.go`)
 
 **Optimized Collections:**
+
 - ✅ **txList**: Nonce-ordered transaction lists per account
 - ✅ **txLookup**: Hash-based fast transaction retrieval
 - ✅ **txPricedList**: Min-heap for gas price ordering
@@ -84,6 +88,7 @@ type Signer interface {
 ## 🚀 **Integration with HotStuff**
 
 ### Command Conversion
+
 ```go
 // Convert transaction to HotStuff command
 func (tx *Transaction) ToCommand() hotstuff.Command {
@@ -100,6 +105,7 @@ func TransactionFromCommand(cmd hotstuff.Command) (*Transaction, error) {
 ```
 
 ### Block Assembly
+
 ```go
 // Get transactions for block creation
 blockTxs := pool.GetTransactionsForBlock(blockGasLimit)
@@ -114,6 +120,7 @@ for _, cmd := range commands {
 ## 📊 **Performance Characteristics**
 
 ### Benchmarked Operations
+
 - **Transaction Addition**: ~0.001ms per transaction
 - **Block Assembly**: ~0.1ms for 100 transactions
 - **Gas Price Sorting**: O(log n) insertion, O(1) peak retrieval
@@ -121,6 +128,7 @@ for _, cmd := range commands {
 - **Concurrent Safety**: Full thread-safe operations
 
 ### Scalability Metrics
+
 - **Pool Capacity**: 4,096 pending + 1,024 queued (configurable)
 - **Account Limits**: 16 pending + 64 queued per account
 - **Block Selection**: ~100-1000 transactions per block
@@ -129,6 +137,7 @@ for _, cmd := range commands {
 ## 🧪 **Testing Coverage**
 
 ### Unit Tests (`txpool/pool_test.go`)
+
 - ✅ **Pool Creation**: Initialization and configuration
 - ✅ **Transaction Addition**: Local and remote submission
 - ✅ **Validation**: Gas price limits, transaction format
@@ -139,6 +148,7 @@ for _, cmd := range commands {
 - ✅ **Nonce Management**: Sequential ordering
 
 ### Integration Example (`examples/txpool_example.go`)
+
 - ✅ **Multi-Account Demo**: 3 accounts with 3 transactions each
 - ✅ **Gas Price Variation**: 1 Gwei, 1.5 Gwei, 2 Gwei
 - ✅ **Real-time Events**: Live transaction notifications
@@ -148,6 +158,7 @@ for _, cmd := range commands {
 ## 🎯 **Current Capabilities**
 
 ### ✅ **What We Can Do Now**
+
 1. **Accept Ethereum-style transactions** from clients
 2. **Validate and queue transactions** by gas price and nonce
 3. **Assemble blocks** with optimal transaction selection
@@ -157,6 +168,7 @@ for _, cmd := range commands {
 7. **Enforce economic incentives** through gas pricing
 
 ### 🔧 **Production-Ready Features**
+
 - **Memory Management**: Pool size limits and cleanup
 - **Price Bump Protection**: Prevents spam attacks
 - **Chain ID Validation**: EIP-155 replay protection
@@ -169,12 +181,14 @@ for _, cmd := range commands {
 With our transaction pool foundation in place, we're ready for the next phase:
 
 ### **Immediate Next Priority:**
+
 1. **State Management** - Ethereum-compatible state trie
 2. **EVM Integration** - Smart contract execution engine
 3. **Block Structure** - Add transaction receipts and state roots
 4. **JSON-RPC API** - MetaMask compatibility
 
 ### **Integration Points:**
+
 - **State Queries**: `pool.GetBalance(address)` for validation
 - **Nonce Management**: Integration with account state
 - **Gas Estimation**: EVM-based gas usage calculation
@@ -183,6 +197,7 @@ With our transaction pool foundation in place, we're ready for the next phase:
 ## 📈 **Success Metrics**
 
 ### **Technical Achievement:**
+
 - ✅ **100% Test Coverage**: All core functionality tested
 - ✅ **Zero Memory Leaks**: Proper resource management
 - ✅ **Concurrent Safety**: Thread-safe operations
@@ -190,6 +205,7 @@ With our transaction pool foundation in place, we're ready for the next phase:
 - ✅ **Ethereum Compatibility**: Standard transaction format
 
 ### **Performance Achievement:**
+
 - ✅ **High Throughput**: >10k ops/sec transaction pool operations
 - ✅ **Low Latency**: Sub-millisecond transaction processing
 - ✅ **Efficient Memory**: Optimized data structures

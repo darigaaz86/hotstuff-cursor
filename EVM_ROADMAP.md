@@ -3,6 +3,7 @@
 ## 🎯 Goal: Transform HotStuff into a Production Layer 1 EVM-Compatible Blockchain
 
 ### Current Status ✅
+
 - **BFT Consensus**: HotStuff consensus protocol implemented
 - **Persistent Storage**: BadgerDB integration with crash recovery
 - **Performance**: Benchmarked ~411 cmd/s with persistence
@@ -13,17 +14,20 @@
 ## Phase 1: Core EVM Integration 🔧
 
 ### 1.1 Ethereum Virtual Machine
+
 ```go
 // Priority: HIGH | Effort: Large | Timeline: 3-4 weeks
 ```
 
 **Components Needed:**
+
 - **EVM Engine**: Integrate go-ethereum's EVM
 - **Gas Metering**: Implement gas limit and pricing
 - **Opcodes**: Full EVM opcode support
 - **Precompiles**: Essential precompiled contracts
 
 **Implementation:**
+
 ```go
 // evm/engine.go
 type EVMEngine struct {
@@ -39,11 +43,13 @@ func (e *EVMEngine) ExecuteTransaction(tx *types.Transaction) (*types.Receipt, e
 ```
 
 ### 1.2 Transaction Pool (Mempool)
+
 ```go
 // Priority: HIGH | Effort: Medium | Timeline: 2 weeks
 ```
 
 **Features:**
+
 - **Pending Transactions**: Queue for unconfirmed transactions
 - **Nonce Management**: Prevent replay attacks
 - **Gas Price Ordering**: Priority queue by gas price
@@ -60,11 +66,13 @@ type TxPool struct {
 ```
 
 ### 1.3 State Management
+
 ```go
 // Priority: HIGH | Effort: Large | Timeline: 4 weeks
 ```
 
 **Components:**
+
 - **State Trie**: Merkle Patricia Trie for accounts
 - **Account Model**: Balance, nonce, code, storage
 - **Storage Trie**: Contract storage management
@@ -85,11 +93,13 @@ type StateDB struct {
 ## Phase 2: Block Structure & Processing ⛓️
 
 ### 2.1 EVM-Compatible Block Format
+
 ```go
 // Priority: HIGH | Effort: Medium | Timeline: 2 weeks
 ```
 
 **New Block Structure:**
+
 ```go
 type Block struct {
     Header *Header
@@ -118,11 +128,13 @@ type Body struct {
 ```
 
 ### 2.2 Transaction Execution Engine
+
 ```go
 // Priority: HIGH | Effort: Medium | Timeline: 2 weeks
 ```
 
 **Features:**
+
 - **Transaction Validation**: Signature, nonce, balance checks
 - **Gas Estimation**: Accurate gas usage prediction
 - **Receipt Generation**: Logs, status, gas used
@@ -131,11 +143,13 @@ type Body struct {
 ## Phase 3: JSON-RPC API 🌐
 
 ### 3.1 Ethereum-Compatible RPC
+
 ```go
 // Priority: HIGH | Effort: Medium | Timeline: 2-3 weeks
 ```
 
 **Essential Methods:**
+
 ```go
 // rpc/ethereum.go
 type EthereumAPI struct {
@@ -152,6 +166,7 @@ func (api *EthereumAPI) EstimateGas(args TransactionArgs, blockNumber *rpc.Block
 ```
 
 **RPC Methods to Implement:**
+
 ```json
 {
   "essential": [
@@ -167,11 +182,13 @@ func (api *EthereumAPI) EstimateGas(args TransactionArgs, blockNumber *rpc.Block
 ```
 
 ### 3.2 WebSocket Support
+
 ```go
 // Priority: MEDIUM | Effort: Small | Timeline: 1 week
 ```
 
 **Real-time Updates:**
+
 - **New Blocks**: Push block headers to subscribers
 - **Pending Transactions**: Transaction pool updates
 - **Logs**: Event log subscriptions
@@ -180,11 +197,13 @@ func (api *EthereumAPI) EstimateGas(args TransactionArgs, blockNumber *rpc.Block
 ## Phase 4: P2P Networking 🌍
 
 ### 4.1 Transaction Propagation
+
 ```go
 // Priority: HIGH | Effort: Medium | Timeline: 2 weeks
 ```
 
 **Network Layer:**
+
 - **Transaction Gossip**: Efficient tx propagation
 - **Peer Discovery**: Find and connect to peers
 - **Protocol Handshake**: Version and capability negotiation
@@ -205,11 +224,13 @@ func (p *EthProtocol) HandleTxMsg(peer *Peer, msg *TxMsg) error {
 ```
 
 ### 4.2 Block Synchronization
+
 ```go
 // Priority: MEDIUM | Effort: Medium | Timeline: 2 weeks
 ```
 
 **Sync Mechanisms:**
+
 - **Fast Sync**: Download state at specific block
 - **Full Sync**: Process all blocks from genesis
 - **Light Client**: Header-only synchronization
@@ -218,33 +239,39 @@ func (p *EthProtocol) HandleTxMsg(peer *Peer, msg *TxMsg) error {
 ## Phase 5: Production Features 🏭
 
 ### 5.1 Wallet Integration
+
 ```go
 // Priority: HIGH | Effort: Small | Timeline: 1 week
 ```
 
 **MetaMask Compatibility:**
+
 - **Chain Registration**: Add network to MetaMask
 - **Transaction Signing**: EIP-155 signature standard
 - **Contract Interaction**: ABI encoding/decoding
 - **Event Filtering**: Log query optimization
 
 ### 5.2 Development Tools
+
 ```go
 // Priority: MEDIUM | Effort: Medium | Timeline: 2 weeks
 ```
 
 **Developer Experience:**
+
 - **Hardhat Integration**: Deploy and test contracts
 - **Remix IDE**: Browser-based development
 - **Block Explorer**: Transaction and block viewer
 - **Faucet**: Testnet token distribution
 
 ### 5.3 Performance Optimization
+
 ```go
 // Priority: MEDIUM | Effort: Large | Timeline: 3 weeks
 ```
 
 **Optimizations:**
+
 - **Parallel Execution**: Multi-threaded transaction processing
 - **State Caching**: LRU cache for frequent state access
 - **Database Tuning**: BadgerDB optimization for blockchain workload
@@ -300,12 +327,14 @@ func (p *EthProtocol) HandleTxMsg(peer *Peer, msg *TxMsg) error {
 ## Success Metrics
 
 ### Technical Goals
+
 - **Throughput**: Maintain >300 TPS with EVM execution
 - **Latency**: Block finality under 2 seconds
 - **Storage**: Efficient state growth management
 - **Compatibility**: 100% MetaMask compatibility
 
 ### Ecosystem Goals
+
 - **Solidity Support**: Deploy existing Ethereum contracts
 - **Tool Integration**: Hardhat, Remix, Foundry support
 - **Wallet Support**: MetaMask, WalletConnect integration
@@ -314,6 +343,7 @@ func (p *EthProtocol) HandleTxMsg(peer *Peer, msg *TxMsg) error {
 ## Next Immediate Step
 
 🎯 **Start with Phase 1.2: Transaction Pool**
+
 - Lowest complexity among critical components
 - No external dependencies
 - Foundation for EVM integration

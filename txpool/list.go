@@ -10,7 +10,7 @@ import (
 // txList is a "list" of transactions belonging to an account, sorted by nonce.
 // Transactions can be in pending or queued state.
 type txList struct {
-	strict bool              // Whether nonces are strictly continuous or not
+	strict bool                    // Whether nonces are strictly continuous or not
 	txs    map[uint64]*Transaction // Hash map of nonce -> transaction
 }
 
@@ -41,10 +41,10 @@ func (l *txList) Add(tx *Transaction, priceBump uint64) (bool, *Transaction) {
 			return false, nil
 		}
 	}
-	
+
 	// Add the transaction
 	l.txs[tx.Nonce] = tx
-	
+
 	return true, old
 }
 
@@ -53,14 +53,14 @@ func (l *txList) Add(tx *Transaction, priceBump uint64) (bool, *Transaction) {
 // maintenance.
 func (l *txList) Forward(threshold uint64) []*Transaction {
 	var removed []*Transaction
-	
+
 	for nonce, tx := range l.txs {
 		if nonce < threshold {
 			removed = append(removed, tx)
 			delete(l.txs, nonce)
 		}
 	}
-	
+
 	return removed
 }
 
@@ -69,7 +69,7 @@ func (l *txList) Forward(threshold uint64) []*Transaction {
 // post-removal maintenance.
 func (l *txList) Filter(costLimit *big.Int, gasLimit uint64) ([]*Transaction, []*Transaction) {
 	var invalids, caps []*Transaction
-	
+
 	for nonce, tx := range l.txs {
 		// Remove transactions with too high cost
 		if tx.Cost().Cmp(costLimit) > 0 {
@@ -77,14 +77,14 @@ func (l *txList) Filter(costLimit *big.Int, gasLimit uint64) ([]*Transaction, []
 			delete(l.txs, nonce)
 			continue
 		}
-		
+
 		// Remove transactions with too high gas limit
 		if tx.GasLimit > gasLimit {
 			caps = append(caps, tx)
 			delete(l.txs, nonce)
 		}
 	}
-	
+
 	return invalids, caps
 }
 
@@ -94,21 +94,21 @@ func (l *txList) Cap(threshold int) []*Transaction {
 	if len(l.txs) <= threshold {
 		return nil
 	}
-	
+
 	// Sort transactions by nonce
 	nonces := make([]uint64, 0, len(l.txs))
 	for nonce := range l.txs {
 		nonces = append(nonces, nonce)
 	}
 	sort.Slice(nonces, func(i, j int) bool { return nonces[i] < nonces[j] })
-	
+
 	// Remove excess transactions (keep lowest nonces)
 	var drops []*Transaction
 	for _, nonce := range nonces[threshold:] {
 		drops = append(drops, l.txs[nonce])
 		delete(l.txs, nonce)
 	}
-	
+
 	return drops
 }
 
@@ -126,14 +126,14 @@ func (l *txList) Remove(tx *Transaction) bool {
 func (l *txList) RemoveOld(lifetime time.Duration) []*Transaction {
 	// cutoff := time.Now().Add(-lifetime)
 	var removed []*Transaction
-	
+
 	for nonce, tx := range l.txs {
 		// This is simplified - in practice, we'd need to track transaction timestamps
 		// For now, assume all transactions in queue are old enough to remove
 		removed = append(removed, tx)
 		delete(l.txs, nonce)
 	}
-	
+
 	return removed
 }
 
@@ -142,7 +142,7 @@ func (l *txList) RemoveOld(lifetime time.Duration) []*Transaction {
 // lower than start will also be returned to prevent getting into an invalid state.
 func (l *txList) Ready(start uint64) []*Transaction {
 	var ready []*Transaction
-	
+
 	for nonce := start; ; nonce++ {
 		tx, exists := l.txs[nonce]
 		if !exists {
@@ -150,7 +150,7 @@ func (l *txList) Ready(start uint64) []*Transaction {
 		}
 		ready = append(ready, tx)
 	}
-	
+
 	return ready
 }
 
@@ -170,20 +170,20 @@ func (l *txList) Flatten() []*Transaction {
 	if len(l.txs) == 0 {
 		return nil
 	}
-	
+
 	// Get sorted nonces
 	nonces := make([]uint64, 0, len(l.txs))
 	for nonce := range l.txs {
 		nonces = append(nonces, nonce)
 	}
 	sort.Slice(nonces, func(i, j int) bool { return nonces[i] < nonces[j] })
-	
+
 	// Create sorted transaction slice
 	flat := make([]*Transaction, len(nonces))
 	for i, nonce := range nonces {
 		flat[i] = l.txs[nonce]
 	}
-	
+
 	return flat
 }
 
@@ -265,7 +265,7 @@ func (l *txPricedList) Removed(count int) {
 func (l *txPricedList) Reheap() {
 	*l.items = (*l.items)[:0]
 	l.stales = 0
-	
+
 	// This is simplified - in practice, we'd rebuild from all transactions
 }
 

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"math/big"
 	"net"
 	"os"
 	"path/filepath"
@@ -16,6 +17,8 @@ import (
 	"github.com/relab/hotstuff/internal/tree"
 	"github.com/relab/hotstuff/logging"
 	"github.com/relab/hotstuff/metrics"
+	"github.com/relab/hotstuff/rpc"
+	"github.com/relab/hotstuff/evm"
 	"github.com/relab/iago"
 	"github.com/spf13/viper"
 )
@@ -73,7 +76,7 @@ func runController() {
 	}
 
 	if cfg.Worker || len(hosts) == 0 {
-		worker, wait := localWorker(cfg.Output, cfg.Metrics, cfg.MeasurementInterval, cfg.Persistent, cfg.DataDir)
+		worker, wait := localWorker(cfg.Output, cfg.Metrics, cfg.MeasurementInterval, cfg.Persistent, cfg.DataDir, cfg.RPC, cfg.RPCAddr, cfg.RPCCORS)
 		defer wait()
 		remoteWorkers["localhost"] = worker
 	}
@@ -112,7 +115,7 @@ func checkf(format string, args ...any) {
 	}
 }
 
-func localWorker(globalOutput string, enableMetrics []string, interval time.Duration, persistent bool, dataDir string) (worker orchestration.RemoteWorker, wait func()) {
+func localWorker(globalOutput string, enableMetrics []string, interval time.Duration, persistent bool, dataDir string, rpcEnabled bool, rpcAddr string, rpcCors bool) (worker orchestration.RemoteWorker, wait func()) {
 	// set up an output dir
 	output := ""
 	if globalOutput != "" {
@@ -153,6 +156,29 @@ func localWorker(globalOutput string, enableMetrics []string, interval time.Dura
 			interval,
 		)
 
+		// Start RPC server if enabled
+		var rpcServer *rpc.Server
+		if rpcEnabled {
+			// Initialize RPC components
+			stateDB := evm.NewInMemoryStateDB()
+			txPool := rpc.NewSimpleTxPool()
+			executor := evm.NewExecutor(evm.ExecutionConfig{
+				GasLimit: 8000000,
+				BaseFee:  big.NewInt(1000000000),
+				ChainID:  big.NewInt(1337),
+			})
+			
+			// Create RPC service
+			rpcService := rpc.NewSimpleRPCService(stateDB, executor, txPool)
+			handler := rpc.NewHandler(rpcService)
+			rpcServer = rpc.NewServer(handler, rpcAddr)
+			
+			// Start RPC server
+			if err := rpcServer.Start(); err != nil {
+				log.Fatalf("Failed to start RPC server: %v", err)
+			}
+		}
+
 		var err error
 		if persistent {
 			// Create data directory for persistent storage
@@ -171,6 +197,11 @@ func localWorker(globalOutput string, enableMetrics []string, interval time.Dura
 
 		if err != nil {
 			log.Fatal(err)
+		}
+		
+		// Stop RPC server if it was started
+		if rpcServer != nil {
+			rpcServer.Stop()
 		}
 		close(c)
 	}()

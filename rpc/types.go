@@ -68,7 +68,7 @@ func (h HexBytes) ToBytes() ([]byte, error) {
 	if len(hexStr)%2 != 0 {
 		hexStr = "0" + hexStr
 	}
-	
+
 	result := make([]byte, len(hexStr)/2)
 	for i := 0; i < len(hexStr); i += 2 {
 		b, err := strconv.ParseUint(hexStr[i:i+2], 16, 8)
@@ -93,7 +93,7 @@ func (a Address) ToTxpoolAddress() (txpool.Address, error) {
 	if len(a) != 42 { // 0x + 40 hex chars
 		return txpool.Address{}, fmt.Errorf("invalid address length")
 	}
-	
+
 	var addr txpool.Address
 	_, err := fmt.Sscanf(string(a), "0x%040x", &addr)
 	return addr, err
@@ -112,7 +112,7 @@ func (h Hash) ToHotstuffHash() (hotstuff.Hash, error) {
 	if len(h) != 66 { // 0x + 64 hex chars
 		return hotstuff.Hash{}, fmt.Errorf("invalid hash length")
 	}
-	
+
 	var hash hotstuff.Hash
 	_, err := fmt.Sscanf(string(h), "0x%064x", &hash)
 	return hash, err
@@ -120,26 +120,26 @@ func (h Hash) ToHotstuffHash() (hotstuff.Hash, error) {
 
 // Block represents an Ethereum block for JSON-RPC
 type Block struct {
-	Number           HexNumber    `json:"number"`
-	Hash             Hash         `json:"hash"`
-	ParentHash       Hash         `json:"parentHash"`
-	Nonce            HexBytes     `json:"nonce"`
-	Sha3Uncles       Hash         `json:"sha3Uncles"`
-	LogsBloom        HexBytes     `json:"logsBloom"`
-	TransactionsRoot Hash         `json:"transactionsRoot"`
-	StateRoot        Hash         `json:"stateRoot"`
-	ReceiptsRoot     Hash         `json:"receiptsRoot"`
-	Miner            Address      `json:"miner"`
-	Difficulty       HexNumber    `json:"difficulty"`
-	TotalDifficulty  HexNumber    `json:"totalDifficulty"`
-	ExtraData        HexBytes     `json:"extraData"`
-	Size             HexNumber    `json:"size"`
-	GasLimit         HexNumber    `json:"gasLimit"`
-	GasUsed          HexNumber    `json:"gasUsed"`
-	Timestamp        HexNumber    `json:"timestamp"`
-	Transactions     []Hash       `json:"transactions"`
-	Uncles           []Hash       `json:"uncles"`
-	BaseFeePerGas    *HexNumber   `json:"baseFeePerGas,omitempty"`
+	Number           HexNumber  `json:"number"`
+	Hash             Hash       `json:"hash"`
+	ParentHash       Hash       `json:"parentHash"`
+	Nonce            HexBytes   `json:"nonce"`
+	Sha3Uncles       Hash       `json:"sha3Uncles"`
+	LogsBloom        HexBytes   `json:"logsBloom"`
+	TransactionsRoot Hash       `json:"transactionsRoot"`
+	StateRoot        Hash       `json:"stateRoot"`
+	ReceiptsRoot     Hash       `json:"receiptsRoot"`
+	Miner            Address    `json:"miner"`
+	Difficulty       HexNumber  `json:"difficulty"`
+	TotalDifficulty  HexNumber  `json:"totalDifficulty"`
+	ExtraData        HexBytes   `json:"extraData"`
+	Size             HexNumber  `json:"size"`
+	GasLimit         HexNumber  `json:"gasLimit"`
+	GasUsed          HexNumber  `json:"gasUsed"`
+	Timestamp        HexNumber  `json:"timestamp"`
+	Transactions     []Hash     `json:"transactions"`
+	Uncles           []Hash     `json:"uncles"`
+	BaseFeePerGas    *HexNumber `json:"baseFeePerGas,omitempty"`
 }
 
 // NewBlockFromEVM creates a Block from evm.EVMBlock
@@ -151,21 +151,21 @@ func NewBlockFromEVM(block *evm.EVMBlock, includeTxs bool) *Block {
 		copy(hotstuffHash[:], txHash[:])
 		txHashes[i] = NewHash(hotstuffHash)
 	}
-	
+
 	result := &Block{
 		Number:           NewHexNumberFromBig(block.Header.Number),
 		Hash:             NewHash(block.Hash()),
-		ParentHash:       NewHash(block.Parent()), // Use HotStuff parent
-		Nonce:            "0x0000000000000000", // Not used in our consensus
-		Sha3Uncles:       NewHash(hotstuff.Hash{}), // No uncles in HotStuff
+		ParentHash:       NewHash(block.Parent()),        // Use HotStuff parent
+		Nonce:            "0x0000000000000000",           // Not used in our consensus
+		Sha3Uncles:       NewHash(hotstuff.Hash{}),       // No uncles in HotStuff
 		LogsBloom:        NewHexBytes(make([]byte, 256)), // Simplified
 		TransactionsRoot: NewHash(block.Header.TxRoot),
 		StateRoot:        NewHash(block.Header.StateRoot),
 		ReceiptsRoot:     NewHash(block.Header.ReceiptRoot),
 		Miner:            NewAddress(block.Header.Coinbase),
-		Difficulty:       "0x1", // Fixed difficulty for HotStuff
-		TotalDifficulty:  NewHexNumberFromBig(block.Header.Number), // Simplified
-		ExtraData:        "0x486f7453747566662d45564d", // "HotStuff-EVM" in hex
+		Difficulty:       "0x1",                                      // Fixed difficulty for HotStuff
+		TotalDifficulty:  NewHexNumberFromBig(block.Header.Number),   // Simplified
+		ExtraData:        "0x486f7453747566662d45564d",               // "HotStuff-EVM" in hex
 		Size:             NewHexNumber(uint64(len(block.ToBytes()))), // Approximate size
 		GasLimit:         NewHexNumber(block.Header.GasLimit),
 		GasUsed:          NewHexNumber(block.Header.GasUsed),
@@ -173,33 +173,33 @@ func NewBlockFromEVM(block *evm.EVMBlock, includeTxs bool) *Block {
 		Transactions:     txHashes,
 		Uncles:           []Hash{}, // No uncles in HotStuff
 	}
-	
+
 	if block.Header.BaseFee != nil {
 		baseFee := NewHexNumberFromBig(block.Header.BaseFee)
 		result.BaseFeePerGas = &baseFee
 	}
-	
+
 	return result
 }
 
 // Transaction represents an Ethereum transaction for JSON-RPC
 type Transaction struct {
-	Hash             Hash        `json:"hash"`
-	Nonce            HexNumber   `json:"nonce"`
-	BlockHash        *Hash       `json:"blockHash"`
-	BlockNumber      *HexNumber  `json:"blockNumber"`
-	TransactionIndex *HexNumber  `json:"transactionIndex"`
-	From             Address     `json:"from"`
-	To               *Address    `json:"to"`
-	Value            HexNumber   `json:"value"`
-	GasPrice         HexNumber   `json:"gasPrice"`
-	Gas              HexNumber   `json:"gas"`
-	Input            HexBytes    `json:"input"`
-	V                HexNumber   `json:"v"`
-	R                HexNumber   `json:"r"`
-	S                HexNumber   `json:"s"`
-	Type             *HexNumber  `json:"type,omitempty"`
-	ChainId          *HexNumber  `json:"chainId,omitempty"`
+	Hash             Hash       `json:"hash"`
+	Nonce            HexNumber  `json:"nonce"`
+	BlockHash        *Hash      `json:"blockHash"`
+	BlockNumber      *HexNumber `json:"blockNumber"`
+	TransactionIndex *HexNumber `json:"transactionIndex"`
+	From             Address    `json:"from"`
+	To               *Address   `json:"to"`
+	Value            HexNumber  `json:"value"`
+	GasPrice         HexNumber  `json:"gasPrice"`
+	Gas              HexNumber  `json:"gas"`
+	Input            HexBytes   `json:"input"`
+	V                HexNumber  `json:"v"`
+	R                HexNumber  `json:"r"`
+	S                HexNumber  `json:"s"`
+	Type             *HexNumber `json:"type,omitempty"`
+	ChainId          *HexNumber `json:"chainId,omitempty"`
 }
 
 // NewTransactionFromTxpool creates a Transaction from txpool.Transaction
@@ -208,82 +208,82 @@ func NewTransactionFromTxpool(tx *txpool.Transaction, blockHash *hotstuff.Hash, 
 	hash := tx.Hash()
 	var from txpool.Address
 	copy(from[:], hash[:20])
-	
+
 	// Convert txpool.Hash to hotstuff.Hash
 	txHash := tx.Hash()
 	var hotstuffHash hotstuff.Hash
 	copy(hotstuffHash[:], txHash[:])
-	
+
 	result := &Transaction{
-		Hash:      NewHash(hotstuffHash),
-		Nonce:     NewHexNumber(tx.Nonce),
-		From:      NewAddress(from),
-		Value:     NewHexNumberFromBig(tx.Value),
-		GasPrice:  NewHexNumberFromBig(tx.GasPrice),
-		Gas:       NewHexNumber(tx.GasLimit),
-		Input:     NewHexBytes(tx.Data),
-		V:         NewHexNumberFromBig(tx.V),
-		R:         NewHexNumberFromBig(tx.R),
-		S:         NewHexNumberFromBig(tx.S),
+		Hash:     NewHash(hotstuffHash),
+		Nonce:    NewHexNumber(tx.Nonce),
+		From:     NewAddress(from),
+		Value:    NewHexNumberFromBig(tx.Value),
+		GasPrice: NewHexNumberFromBig(tx.GasPrice),
+		Gas:      NewHexNumber(tx.GasLimit),
+		Input:    NewHexBytes(tx.Data),
+		V:        NewHexNumberFromBig(tx.V),
+		R:        NewHexNumberFromBig(tx.R),
+		S:        NewHexNumberFromBig(tx.S),
 	}
-	
+
 	if tx.To != nil {
 		to := NewAddress(*tx.To)
 		result.To = &to
 	}
-	
+
 	if blockHash != nil {
 		hash := NewHash(*blockHash)
 		result.BlockHash = &hash
 	}
-	
+
 	if blockNumber != nil {
 		num := NewHexNumberFromBig(blockNumber)
 		result.BlockNumber = &num
 	}
-	
+
 	if txIndex != nil {
 		idx := NewHexNumber(*txIndex)
 		result.TransactionIndex = &idx
 	}
-	
+
 	if tx.ChainID != nil {
 		chainId := NewHexNumberFromBig(tx.ChainID)
 		result.ChainId = &chainId
 	}
-	
+
 	return result
 }
 
 // TransactionReceipt represents an Ethereum transaction receipt for JSON-RPC
 type TransactionReceipt struct {
-	TransactionHash   Hash       `json:"transactionHash"`
-	TransactionIndex  HexNumber  `json:"transactionIndex"`
-	BlockHash         Hash       `json:"blockHash"`
-	BlockNumber       HexNumber  `json:"blockNumber"`
-	From              Address    `json:"from"`
-	To                *Address   `json:"to"`
-	CumulativeGasUsed HexNumber  `json:"cumulativeGasUsed"`
-	GasUsed           HexNumber  `json:"gasUsed"`
-	ContractAddress   *Address   `json:"contractAddress"`
-	Logs              []Log      `json:"logs"`
-	LogsBloom         HexBytes   `json:"logsBloom"`
-	Status            HexNumber  `json:"status"`
-	EffectiveGasPrice HexNumber  `json:"effectiveGasPrice"`
-	Type              HexNumber  `json:"type"`
+	TransactionHash   Hash      `json:"transactionHash"`
+	TransactionIndex  HexNumber `json:"transactionIndex"`
+	BlockHash         Hash      `json:"blockHash"`
+	BlockNumber       HexNumber `json:"blockNumber"`
+	From              Address   `json:"from"`
+	To                *Address  `json:"to"`
+	CumulativeGasUsed HexNumber `json:"cumulativeGasUsed"`
+	GasUsed           HexNumber `json:"gasUsed"`
+	ContractAddress   *Address  `json:"contractAddress"`
+	Logs              []Log     `json:"logs"`
+	LogsBloom         HexBytes  `json:"logsBloom"`
+	Status            HexNumber `json:"status"`
+	EffectiveGasPrice HexNumber `json:"effectiveGasPrice"`
+	Type              HexNumber `json:"type"`
 }
 
 // Log represents an Ethereum log for JSON-RPC
 type Log struct {
-	Address          Address    `json:"address"`
-	Topics           []Hash     `json:"topics"`
-	Data             HexBytes   `json:"data"`
-	BlockNumber      HexNumber  `json:"blockNumber"`
-	TransactionHash  Hash       `json:"transactionHash"`
-	TransactionIndex HexNumber  `json:"transactionIndex"`
-	BlockHash        Hash       `json:"blockHash"`
-	LogIndex         HexNumber  `json:"logIndex"`
-	Removed          bool       `json:"removed"`
+	Address          Address   `json:"address"`
+	Topics           []Hash    `json:"topics"`
+	Data             HexBytes  `json:"data"`
+	BlockNumber      HexNumber `json:"blockNumber"`
+	TransactionHash  Hash      `json:"transactionHash"`
+	TransactionIndex HexNumber `json:"transactionIndex"`
+	BlockHash        Hash      `json:"blockHash"`
+	LogIndex         HexNumber `json:"logIndex"`
+	Removed          bool      `json:"removed"`
 }
 
 // NewTransactionReceiptFromEVM creates a TransactionReceipt from evm.TransactionReceipt
@@ -294,12 +294,12 @@ func NewTransactionReceiptFromEVM(receipt *evm.TransactionReceipt, blockHash hot
 		for j, topic := range log.Topics {
 			topics[j] = NewHash(topic)
 		}
-		
+
 		// Convert log TxHash
 		logTxHash := receipt.TxHash
 		var hotstuffLogTxHash hotstuff.Hash
 		copy(hotstuffLogTxHash[:], logTxHash[:])
-		
+
 		logs[i] = Log{
 			Address:          NewAddress(log.Address),
 			Topics:           topics,
@@ -312,12 +312,12 @@ func NewTransactionReceiptFromEVM(receipt *evm.TransactionReceipt, blockHash hot
 			Removed:          false,
 		}
 	}
-	
+
 	// Convert receipt TxHash
 	receiptTxHash := receipt.TxHash
 	var hotstuffTxHash hotstuff.Hash
 	copy(hotstuffTxHash[:], receiptTxHash[:])
-	
+
 	result := &TransactionReceipt{
 		TransactionHash:   NewHash(hotstuffTxHash),
 		TransactionIndex:  NewHexNumber(receipt.TxIndex),
@@ -332,17 +332,17 @@ func NewTransactionReceiptFromEVM(receipt *evm.TransactionReceipt, blockHash hot
 		EffectiveGasPrice: NewHexNumberFromBig(receipt.EffectiveGasPrice),
 		Type:              "0x0", // Legacy transaction type
 	}
-	
+
 	if receipt.To != nil {
 		to := NewAddress(*receipt.To)
 		result.To = &to
 	}
-	
+
 	if receipt.ContractAddress != nil {
 		addr := NewAddress(*receipt.ContractAddress)
 		result.ContractAddress = &addr
 	}
-	
+
 	return result
 }
 
@@ -361,12 +361,12 @@ func (args *CallArgs) ToTxpoolTransaction() (*txpool.Transaction, error) {
 	tx := &txpool.Transaction{
 		Nonce:    0, // Will be set by the caller
 		Value:    big.NewInt(0),
-		GasLimit: 21000, // Default gas limit
+		GasLimit: 21000,                  // Default gas limit
 		GasPrice: big.NewInt(1000000000), // 1 Gwei default
 		Data:     []byte{},
 		ChainID:  big.NewInt(1337), // Default chain ID
 	}
-	
+
 	if args.Value != nil {
 		value, err := args.Value.ToBig()
 		if err != nil {
@@ -374,7 +374,7 @@ func (args *CallArgs) ToTxpoolTransaction() (*txpool.Transaction, error) {
 		}
 		tx.Value = value
 	}
-	
+
 	if args.Gas != nil {
 		gas, err := args.Gas.ToUint64()
 		if err != nil {
@@ -382,7 +382,7 @@ func (args *CallArgs) ToTxpoolTransaction() (*txpool.Transaction, error) {
 		}
 		tx.GasLimit = gas
 	}
-	
+
 	if args.GasPrice != nil {
 		gasPrice, err := args.GasPrice.ToBig()
 		if err != nil {
@@ -390,7 +390,7 @@ func (args *CallArgs) ToTxpoolTransaction() (*txpool.Transaction, error) {
 		}
 		tx.GasPrice = gasPrice
 	}
-	
+
 	if args.Data != nil {
 		data, err := args.Data.ToBytes()
 		if err != nil {
@@ -398,7 +398,7 @@ func (args *CallArgs) ToTxpoolTransaction() (*txpool.Transaction, error) {
 		}
 		tx.Data = data
 	}
-	
+
 	if args.To != nil {
 		to, err := args.To.ToTxpoolAddress()
 		if err != nil {
@@ -406,7 +406,7 @@ func (args *CallArgs) ToTxpoolTransaction() (*txpool.Transaction, error) {
 		}
 		tx.To = &to
 	}
-	
+
 	return tx, nil
 }
 

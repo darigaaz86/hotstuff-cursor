@@ -19,7 +19,7 @@ type Server struct {
 func NewServer(handler *Handler, addr string) *Server {
 	mux := http.NewServeMux()
 	mux.Handle("/", handler)
-	
+
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      mux,
@@ -38,32 +38,32 @@ func NewServer(handler *Handler, addr string) *Server {
 // Start starts the RPC server
 func (s *Server) Start() error {
 	s.logger.Infof("Starting JSON-RPC server on %s", s.server.Addr)
-	
+
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			s.logger.Errorf("RPC server error: %v", err)
 		}
 	}()
-	
+
 	s.logger.Infof("JSON-RPC server started successfully")
 	s.logger.Infof("Ethereum JSON-RPC API available at: http://%s", s.server.Addr)
 	s.logger.Infof("You can now connect MetaMask to: http://%s", s.server.Addr)
-	
+
 	return nil
 }
 
 // Stop stops the RPC server
 func (s *Server) Stop() error {
 	s.logger.Infof("Stopping JSON-RPC server...")
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	
+
 	if err := s.server.Shutdown(ctx); err != nil {
 		s.logger.Errorf("Error shutting down RPC server: %v", err)
 		return err
 	}
-	
+
 	s.logger.Infof("JSON-RPC server stopped successfully")
 	return nil
 }

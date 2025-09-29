@@ -573,7 +573,7 @@ func (h *Handler) getLogs(params json.RawMessage) (interface{}, *RPCError) {
 		// Convert txpool.Hash to hotstuff.Hash for API compatibility
 		txHashConverted := hotstuff.Hash{}
 		copy(txHashConverted[:], log.TxHash[:])
-		
+
 		rpcLogs[i] = Log{
 			Address:          NewAddress(log.Address),
 			Topics:           topics,

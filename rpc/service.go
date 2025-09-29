@@ -16,37 +16,37 @@ type Service interface {
 	GetBlockByHash(hash hotstuff.Hash, includeTxs bool) (*evm.EVMBlock, error)
 	GetLatestBlock() (*evm.EVMBlock, error)
 	GetLatestBlockNumber() (*big.Int, error)
-	
+
 	// Transaction operations
 	GetTransactionByHash(hash hotstuff.Hash) (*txpool.Transaction, *evm.EVMBlock, uint64, error)
 	GetTransactionReceipt(hash hotstuff.Hash) (*evm.TransactionReceipt, *evm.EVMBlock, error)
 	SendTransaction(tx *txpool.Transaction) (hotstuff.Hash, error)
 	SendRawTransaction(data []byte) (hotstuff.Hash, error)
-	
+
 	// Account operations
 	GetBalance(address txpool.Address, blockNumber *big.Int) (*big.Int, error)
 	GetTransactionCount(address txpool.Address, blockNumber *big.Int) (uint64, error)
 	GetCode(address txpool.Address, blockNumber *big.Int) ([]byte, error)
 	GetStorageAt(address txpool.Address, position hotstuff.Hash, blockNumber *big.Int) (hotstuff.Hash, error)
-	
+
 	// Call operations
 	Call(args CallArgs, blockNumber *big.Int) ([]byte, error)
 	EstimateGas(args CallArgs) (uint64, error)
-	
+
 	// Network operations
 	ChainID() *big.Int
 	GasPrice() *big.Int
-	
+
 	// Utility operations
 	GetLogs(filter LogFilter) ([]evm.Log, error)
 }
 
 // LogFilter represents a filter for eth_getLogs
 type LogFilter struct {
-	FromBlock *big.Int             `json:"fromBlock"`
-	ToBlock   *big.Int             `json:"toBlock"`
-	Address   []txpool.Address     `json:"address"`
-	Topics    [][]hotstuff.Hash    `json:"topics"`
+	FromBlock *big.Int          `json:"fromBlock"`
+	ToBlock   *big.Int          `json:"toBlock"`
+	Address   []txpool.Address  `json:"address"`
+	Topics    [][]hotstuff.Hash `json:"topics"`
 }
 
 // ServiceImpl implements the Service interface
@@ -125,17 +125,17 @@ func (s *ServiceImpl) GetTransactionByHash(hash hotstuff.Hash) (*txpool.Transact
 	if tx, err := s.txpool.GetTransaction(hash); err == nil && tx != nil {
 		return tx, nil, 0, nil
 	}
-	
+
 	// Then search in blocks
 	// Search in the blockchain (simplified for demo)
 	// latestBlock, err := s.blockchain.GetLatestBlock()
 	// if err != nil {
 	//	return nil, nil, 0, err
 	// }
-	
+
 	// For demo purposes, transaction search is disabled
 	// In a full implementation, search through blockchain for the transaction
-	
+
 	return nil, nil, 0, nil
 }
 
@@ -145,14 +145,14 @@ func (s *ServiceImpl) GetTransactionReceipt(hash hotstuff.Hash) (*evm.Transactio
 	if err != nil || block == nil {
 		return nil, nil, err
 	}
-	
+
 	// For demo purposes, receipt lookup is simplified
 	// In a full implementation, get receipt from block storage
 	// receipt, err := s.blockchain.GetReceiptInBlock(block.Hash(), hash)
 	// if err != nil {
 	//	return nil, nil, err
 	// }
-	
+
 	return nil, nil, fmt.Errorf("receipt lookup not implemented in demo")
 }
 
@@ -173,7 +173,7 @@ func (s *ServiceImpl) SendRawTransaction(data []byte) (hotstuff.Hash, error) {
 	if err != nil {
 		return hotstuff.Hash{}, err
 	}
-	
+
 	return s.SendTransaction(tx)
 }
 
@@ -184,7 +184,7 @@ func (s *ServiceImpl) GetBalance(address txpool.Address, blockNumber *big.Int) (
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return stateDB.GetBalance(address), nil
 }
 
@@ -193,7 +193,7 @@ func (s *ServiceImpl) GetTransactionCount(address txpool.Address, blockNumber *b
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return stateDB.GetNonce(address), nil
 }
 
@@ -202,7 +202,7 @@ func (s *ServiceImpl) GetCode(address txpool.Address, blockNumber *big.Int) ([]b
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return stateDB.GetCode(address), nil
 }
 
@@ -211,7 +211,7 @@ func (s *ServiceImpl) GetStorageAt(address txpool.Address, position hotstuff.Has
 	if err != nil {
 		return hotstuff.Hash{}, err
 	}
-	
+
 	return stateDB.GetState(address, position), nil
 }
 
@@ -222,13 +222,13 @@ func (s *ServiceImpl) Call(args CallArgs, blockNumber *big.Int) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Convert call args to transaction
 	tx, err := args.ToTxpoolTransaction()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Set default from address if not provided
 	if args.From == nil {
 		var defaultAddr txpool.Address
@@ -241,13 +241,13 @@ func (s *ServiceImpl) Call(args CallArgs, blockNumber *big.Int) ([]byte, error) 
 		// For calls, we use the from address as the caller
 		_ = from
 	}
-	
+
 	// For demo purposes, create a simple execution context
 	// latestBlock, err := s.blockchain.GetLatestBlock()
 	// if err != nil {
 	//	return nil, err
 	// }
-	
+
 	// Execute the call (read-only)
 	if tx.To == nil {
 		// Contract creation call
@@ -286,7 +286,7 @@ func (s *ServiceImpl) EstimateGas(args CallArgs) (uint64, error) {
 		}
 		return gas, nil
 	}
-	
+
 	// Default estimation based on operation type
 	if args.To == nil {
 		// Contract creation
@@ -318,12 +318,12 @@ func (s *ServiceImpl) GasPrice() *big.Int {
 func (s *ServiceImpl) GetLogs(filter LogFilter) ([]evm.Log, error) {
 	// Simplified log filtering - in production, use log index
 	var logs []evm.Log
-	
+
 	fromBlock := filter.FromBlock
 	if fromBlock == nil {
 		fromBlock = big.NewInt(0)
 	}
-	
+
 	toBlock := filter.ToBlock
 	if toBlock == nil {
 		latest, err := s.GetLatestBlockNumber()
@@ -332,32 +332,32 @@ func (s *ServiceImpl) GetLogs(filter LogFilter) ([]evm.Log, error) {
 		}
 		toBlock = latest
 	}
-	
+
 	// Iterate through blocks and collect matching logs
 	for blockNum := new(big.Int).Set(fromBlock); blockNum.Cmp(toBlock) <= 0; blockNum.Add(blockNum, big.NewInt(1)) {
 		block, err := s.blockchain.GetBlockByNumber(blockNum)
 		if err != nil {
 			continue
 		}
-		
+
 		// Check each transaction's logs
 		for _, tx := range block.Transactions {
 			// Convert tx hash for compatibility
 			txHash := tx.Hash()
 			var hotstuffHash hotstuff.Hash
 			copy(hotstuffHash[:], txHash[:])
-			
+
 			// Demo: receipt lookup not implemented
 			// receipt, err := s.blockchain.GetReceiptInBlock(block.Hash(), hotstuffHash)
 			// if err != nil {
 			//	continue
 			// }
-			
+
 			// Skip receipt processing for demo
 			// In a full implementation, process receipt logs here
 		}
 	}
-	
+
 	return logs, nil
 }
 
@@ -367,7 +367,7 @@ func (s *ServiceImpl) getStateDB(blockNumber *big.Int) (evm.StateDB, error) {
 	if blockNumber == nil {
 		return s.stateService.GetLatestStateDB(), nil
 	}
-	
+
 	return s.stateService.GetStateDB(blockNumber)
 }
 
@@ -385,13 +385,13 @@ func (s *ServiceImpl) matchesLogFilter(log *evm.Log, filter LogFilter) bool {
 			return false
 		}
 	}
-	
+
 	// Check topics filter (simplified)
 	for i, topicFilter := range filter.Topics {
 		if i >= len(log.Topics) {
 			break
 		}
-		
+
 		if len(topicFilter) > 0 {
 			found := false
 			for _, topic := range topicFilter {
@@ -405,7 +405,7 @@ func (s *ServiceImpl) matchesLogFilter(log *evm.Log, filter LogFilter) bool {
 			}
 		}
 	}
-	
+
 	return true
 }
 
@@ -415,7 +415,7 @@ func DecodeRLPTransaction(data []byte) (*txpool.Transaction, error) {
 	if len(data) < 10 {
 		return nil, fmt.Errorf("transaction data too short")
 	}
-	
+
 	// For now, create a minimal transaction
 	tx := &txpool.Transaction{
 		Nonce:    0,
@@ -428,7 +428,6 @@ func DecodeRLPTransaction(data []byte) (*txpool.Transaction, error) {
 		S:        big.NewInt(0),
 		ChainID:  big.NewInt(1337),
 	}
-	
+
 	return tx, nil
 }
-

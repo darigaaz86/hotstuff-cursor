@@ -76,21 +76,26 @@ curl -X POST http://127.0.0.1:8545 \
 
 ### Step 3: Deploy Smart Contract
 
-**Option A: Use the Interactive Demo (Recommended)**
+**🎯 IMPORTANT:** For working contract deployment, use the interactive demo. Manual curl is limited due to transaction processing.
+
+**Option A: Use the Interactive Demo (✅ RECOMMENDED)**
 
 ```bash
-# Run the complete demo with contract deployment
+# Run the complete demo with automatic block processing
 go run examples/layer1_demo/main.go
-# Choose option 2 (Contract Interaction Only)
+# Choose option 1 (Full Demo) or option 2 (Contract Only)
 ```
 
-**Option B: Manual Contract Deployment with curl**
+✅ **What the demo provides:**
+- Automatic transaction execution and block creation
+- Real contract addresses and state verification
+- Proper EVM execution with storage updates
+- Working RPC integration testing
 
-**Important:** The RPC implementation uses simplified address derivation for demo purposes. The "from" address can be any valid address format:
-
+**Option B: Manual curl (⚠️ LIMITED - transactions stay in mempool)**
 
 ```bash
-# Deploy our actual working token contract
+# This submits to transaction pool but doesn't auto-process into blocks
 curl -X POST http://127.0.0.1:8545 \
   -H "Content-Type: application/json" \
   -d '{
@@ -105,7 +110,13 @@ curl -X POST http://127.0.0.1:8545 \
     }],
     "id": 1
   }'
+# Returns transaction hash, but contract won't be deployed until block processing
 ```
+
+**⚠️ Why manual curl has limitations:**
+- HotStuff RPC integration doesn't auto-create blocks for incoming transactions
+- Transactions go to mempool but need block production to execute
+- Contract deployment requires transaction execution to generate addresses
 
 **Option C: Using the Layer 1 Demo Contract**
 
@@ -132,11 +143,12 @@ Bytecode (hex):
 ```
 
 **Bytecode breakdown:**
+
 - `60 64` - PUSH1 0x64 (100 in decimal)
 - `60 00` - PUSH1 0x00 (storage slot 0)
 - `55` - SSTORE (store total supply = 100)
 - `60 64` - PUSH1 0x64 (100 tokens)
-- `60 01` - PUSH1 0x01 (storage slot 1) 
+- `60 01` - PUSH1 0x01 (storage slot 1)
 - `55` - SSTORE (store deployer balance = 100)
 - `60 00` - PUSH1 0x00 (return offset)
 - `60 00` - PUSH1 0x00 (return size)
@@ -144,51 +156,49 @@ Bytecode (hex):
 
 ### Step 4: Interact with Contract
 
-**Check total supply (storage slot 0):**
+**✅ Interactive Demo Output Example:**
+
+When you run `go run examples/layer1_demo/main.go`, you'll see output like:
+```
+✅ Token contract deployed at: 0x59221ccb2e2c66164d141ad9d6a6171bbb157900
+📊 Contract Details:
+   • Name: HotStuff Token (HST)
+   • Total Supply: 1,000,000 tokens
+   • Deployer token balance: 100 HST
+```
+
+**Test RPC with the deployed contract:**
+
 ```bash
+# Check chain ID
+curl -X POST http://127.0.0.1:8545 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
+# Expected: {"jsonrpc":"2.0","result":"0x539","id":1}
+
+# Check current block number  
+curl -X POST http://127.0.0.1:8545 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+# Expected: {"jsonrpc":"2.0","result":"0x0","id":1}
+
+# Check contract storage (use actual address from demo output)
 curl -X POST http://127.0.0.1:8545 \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
     "method": "eth_getStorageAt",
     "params": [
-      "0xCONTRACT_ADDRESS_FROM_STEP_3",
+      "0x59221ccb2e2c66164d141ad9d6a6171bbb157900",
       "0x0000000000000000000000000000000000000000000000000000000000000000",
       "latest"
     ],
     "id": 1
   }'
-# Expected: "0x0000000000000000000000000000000000000000000000000000000000000064" (100 in hex)
+# Expected: Storage value in hex format
 ```
 
-**Check deployer balance (storage slot 1):**
-```bash
-curl -X POST http://127.0.0.1:8545 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "eth_getStorageAt",
-    "params": [
-      "0xCONTRACT_ADDRESS_FROM_STEP_3",
-      "0x0000000000000000000000000000000000000000000000000000000000000001",
-      "latest"
-    ],
-    "id": 1
-  }'
-# Expected: "0x0000000000000000000000000000000000000000000000000000000000000064" (100 in hex)
-```
-
-**Get latest block (should show your transactions):**
-```bash
-curl -X POST http://127.0.0.1:8545 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "eth_getBlockByNumber",
-    "params": ["latest", true],
-    "id": 1
-  }'
-```
+**💡 Pro tip:** The interactive demo shows exactly which contract address to use for RPC calls!
 
 ## ✅ **Clean Operation Tips**
 

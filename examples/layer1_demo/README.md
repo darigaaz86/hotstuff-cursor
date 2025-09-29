@@ -76,37 +76,116 @@ curl -X POST http://127.0.0.1:8545 \
 
 ### Step 3: Deploy Smart Contract
 
-Use the provided demo or any Ethereum tool:
+**Option A: Use the Interactive Demo (Recommended)**
 
 ```bash
-# With curl (using our demo contract)
+# Run the complete demo with contract deployment
+go run examples/layer1_demo/main.go
+# Choose option 2 (Contract Interaction Only)
+```
+
+**Option B: Manual Contract Deployment with curl**
+
+**Important:** The RPC implementation uses simplified address derivation for demo purposes. The "from" address can be any valid address format:
+
+
+```bash
+# Deploy our actual working token contract
 curl -X POST http://127.0.0.1:8545 \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
     "method": "eth_sendTransaction", 
     "params": [{
-      "from": "0x742f70743166a45ad1c3b0....",
-      "data": "0x608060405234801561001057600080fd5b50...",
-      "gas": "0x2dc6c0"
+      "from": "0x1234567890123456789012345678901234567890",
+      "data": "0x6064600055606460015560006000f3",
+      "gas": "0x7a120",
+      "gasPrice": "0x3b9aca00",
+      "value": "0x0"
     }],
     "id": 1
   }'
 ```
 
+**Option C: Using the Layer 1 Demo Contract**
+
+The `examples/layer1_demo/main.go` includes a working ERC-20 token contract with this bytecode:
+
+```solidity
+// Simple token contract that:
+// 1. Stores total supply (100 tokens) at storage slot 0
+// 2. Stores deployer balance (100 tokens) at storage slot 1
+contract SimpleToken {
+    mapping(address => uint256) public balances;
+    uint256 public totalSupply = 100;
+    
+    constructor() {
+        balances[msg.sender] = totalSupply;
+    }
+}
+```
+
+Bytecode (hex):
+
+```
+0x6064600055606460015560006000f3
+```
+
+**Bytecode breakdown:**
+- `60 64` - PUSH1 0x64 (100 in decimal)
+- `60 00` - PUSH1 0x00 (storage slot 0)
+- `55` - SSTORE (store total supply = 100)
+- `60 64` - PUSH1 0x64 (100 tokens)
+- `60 01` - PUSH1 0x01 (storage slot 1) 
+- `55` - SSTORE (store deployer balance = 100)
+- `60 00` - PUSH1 0x00 (return offset)
+- `60 00` - PUSH1 0x00 (return size)
+- `f3` - RETURN (end constructor)
+
 ### Step 4: Interact with Contract
 
+**Check total supply (storage slot 0):**
 ```bash
-# Call contract function (transfer tokens)
 curl -X POST http://127.0.0.1:8545 \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
-    "method": "eth_call",
-    "params": [{
-      "to": "0xcontract_address",
-      "data": "0xa9059cbb00000000..." 
-    }, "latest"],
+    "method": "eth_getStorageAt",
+    "params": [
+      "0xCONTRACT_ADDRESS_FROM_STEP_3",
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "latest"
+    ],
+    "id": 1
+  }'
+# Expected: "0x0000000000000000000000000000000000000000000000000000000000000064" (100 in hex)
+```
+
+**Check deployer balance (storage slot 1):**
+```bash
+curl -X POST http://127.0.0.1:8545 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_getStorageAt",
+    "params": [
+      "0xCONTRACT_ADDRESS_FROM_STEP_3",
+      "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "latest"
+    ],
+    "id": 1
+  }'
+# Expected: "0x0000000000000000000000000000000000000000000000000000000000000064" (100 in hex)
+```
+
+**Get latest block (should show your transactions):**
+```bash
+curl -X POST http://127.0.0.1:8545 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_getBlockByNumber",
+    "params": ["latest", true],
     "id": 1
   }'
 ```
@@ -116,12 +195,14 @@ curl -X POST http://127.0.0.1:8545 \
 ### Recommended Commands
 
 **For clean development (no client noise):**
+
 ```bash
 # Clean consensus logs only
 ./hotstuff run --rpc --rpc-addr 127.0.0.1:8545 --duration 300s --replicas 4 --clients 0
 ```
 
 **For testing with automatic transactions:**
+
 ```bash
 # With transaction generation (noisy)
 ./hotstuff run --rpc --rpc-addr 127.0.0.1:8545 --duration 300s --replicas 4 --clients 2
@@ -130,11 +211,13 @@ curl -X POST http://127.0.0.1:8545 \
 ### What You'll See
 
 **Clean operation (`--clients 0`):**
+
 - ✅ Consensus logs: `Creating replicas...`, `Starting replicas...`
 - ✅ RPC server logs: `Starting JSON-RPC server on 127.0.0.1:8545`
 - ✅ **No client spam**: No "commands sent so far" messages
 
 **With clients (`--clients 2`):**
+
 - ⚠️ Noisy logs: `INFO cli1 client/client.go:255 25674 commands sent so far`
 - ⚠️ Continuous transaction generation
 
@@ -159,6 +242,7 @@ The demo script provides:
 ## 🛠️ Troubleshooting
 
 ### RPC Server Not Starting
+
 ```bash
 # Check if RPC flags are properly set
 ./hotstuff run --rpc --rpc-addr 127.0.0.1:8545 --replicas 4 --clients 0
@@ -169,6 +253,7 @@ curl -X POST http://127.0.0.1:8545 -H "Content-Type: application/json" \
 ```
 
 ### Too Many Logs
+
 ```bash
 # Use --clients 0 to eliminate automatic transaction logs
 ./hotstuff run --rpc --clients 0 --replicas 4
@@ -178,6 +263,7 @@ curl -X POST http://127.0.0.1:8545 -H "Content-Type: application/json" \
 ```
 
 ### Port Already in Use
+
 ```bash
 # Use a different port
 ./hotstuff run --rpc --rpc-addr 127.0.0.1:8546 --clients 0 --replicas 4

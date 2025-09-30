@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/relab/hotstuff"
 	"github.com/relab/hotstuff/logging"
 )
 
@@ -90,6 +91,39 @@ func NewTxPool(config Config, signer Signer) *TxPool {
 	go pool.loop()
 
 	return pool
+}
+
+// AddTransaction adds a transaction to the pool (for interface compatibility)
+func (pool *TxPool) AddTransaction(tx *Transaction) error {
+	return pool.add(tx, false)
+}
+
+// GetPendingTransactions returns all pending transactions (for interface compatibility)
+func (pool *TxPool) GetPendingTransactions() []*Transaction {
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
+
+	var pending []*Transaction
+	for _, list := range pool.pending {
+		pending = append(pending, list.Flatten()...)
+	}
+	return pending
+}
+
+// GetTransaction returns a transaction by hash (for interface compatibility)
+func (pool *TxPool) GetTransaction(hash hotstuff.Hash) (*Transaction, error) {
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
+
+	// Convert hotstuff.Hash to txpool.Hash
+	var txHash Hash
+	copy(txHash[:], hash[:])
+
+	tx := pool.all.Get(txHash)
+	if tx == nil {
+		return nil, fmt.Errorf("transaction not found")
+	}
+	return tx, nil
 }
 
 // AddLocal adds a local transaction to the pool
@@ -352,6 +386,48 @@ func (pool *TxPool) cleanup() {
 
 	pool.logger.Infof("Transaction pool cleanup completed, pending: %d, queued: %d",
 		pool.stats.pending, pool.stats.queued)
+}
+
+// RemoveTransactions removes a list of transactions from the pool
+func (pool *TxPool) RemoveTransactions(txs []*Transaction) {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	for _, tx := range txs {
+		hash := tx.Hash()
+
+		// Remove from all transactions map
+		if pool.all.Get(hash) != nil {
+			pool.all.Remove(hash)
+			pool.priced.Removed(1)
+		}
+
+		// Remove from pending/queue lists
+		from, err := pool.signer.Sender(tx)
+		if err != nil {
+			continue
+		}
+
+		if list := pool.pending[*from]; list != nil {
+			if list.Remove(tx) {
+				pool.stats.pending--
+				if list.Empty() {
+					delete(pool.pending, *from)
+				}
+			}
+		}
+
+		if list := pool.queue[*from]; list != nil {
+			if list.Remove(tx) {
+				pool.stats.queued--
+				if list.Empty() {
+					delete(pool.queue, *from)
+				}
+			}
+		}
+	}
+
+	pool.logger.Infof("Removed %d transactions from pool", len(txs))
 }
 
 // Close stops the transaction pool

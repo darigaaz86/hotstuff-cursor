@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/relab/hotstuff/blockchain"
+	"github.com/relab/hotstuff/evm"
 	"github.com/relab/hotstuff/internal/config"
 	"github.com/relab/hotstuff/internal/orchestration"
 	"github.com/relab/hotstuff/internal/profiling"
@@ -18,7 +20,7 @@ import (
 	"github.com/relab/hotstuff/logging"
 	"github.com/relab/hotstuff/metrics"
 	"github.com/relab/hotstuff/rpc"
-	"github.com/relab/hotstuff/evm"
+	"github.com/relab/hotstuff/txpool"
 	"github.com/relab/iago"
 	"github.com/spf13/viper"
 )
@@ -156,27 +158,43 @@ func localWorker(globalOutput string, enableMetrics []string, interval time.Dura
 			interval,
 		)
 
-		// Start RPC server if enabled
+		// Initialize Layer 1 blockchain components
+		var l1Blockchain *blockchain.L1Blockchain
 		var rpcServer *rpc.Server
+
+		// Create core blockchain components
+		stateDB := evm.NewInMemoryStateDB()
+		txPoolConfig := txpool.DefaultConfig()
+		signer := txpool.NewEIP155Signer(big.NewInt(1337))
+		txPool := txpool.NewTxPool(txPoolConfig, signer)
+		executor := evm.NewExecutor(evm.ExecutionConfig{
+			GasLimit: 8000000,
+			BaseFee:  big.NewInt(1000000000),
+			ChainID:  big.NewInt(1337),
+		})
+
+		// Create Layer 1 blockchain with automatic transaction processing
+		l1Blockchain = blockchain.NewL1Blockchain(blockchain.L1BlockchainConfig{
+			StateDB:  stateDB,
+			Executor: executor,
+			TxPool:   txPool,
+		})
+		log.Println("Layer 1 blockchain initialized with automatic block production")
+
+		// Start RPC server if enabled (RPC just provides interface, doesn't handle consensus)
 		if rpcEnabled {
-			// Initialize RPC components
-			stateDB := evm.NewInMemoryStateDB()
-			txPool := rpc.NewSimpleTxPool()
-			executor := evm.NewExecutor(evm.ExecutionConfig{
-				GasLimit: 8000000,
-				BaseFee:  big.NewInt(1000000000),
-				ChainID:  big.NewInt(1337),
-			})
-			
-			// Create RPC service
-			rpcService := rpc.NewSimpleRPCService(stateDB, executor, txPool)
+			// Create RPC service that interfaces with the blockchain
+			rpcService := rpc.NewSimpleRPCServiceWithBlockchain(stateDB, executor, txPool, l1Blockchain)
 			handler := rpc.NewHandler(rpcService)
 			rpcServer = rpc.NewServer(handler, rpcAddr)
-			
+
 			// Start RPC server
-			if err := rpcServer.Start(); err != nil {
-				log.Fatalf("Failed to start RPC server: %v", err)
-			}
+			go func() {
+				if err := rpcServer.Start(); err != nil {
+					log.Printf("RPC server error: %v", err)
+				}
+			}()
+			log.Printf("JSON-RPC server started on %s (interface to Layer 1 blockchain)", rpcAddr)
 		}
 
 		var err error
@@ -198,7 +216,12 @@ func localWorker(globalOutput string, enableMetrics []string, interval time.Dura
 		if err != nil {
 			log.Fatal(err)
 		}
-		
+
+		// Stop Layer 1 blockchain
+		if l1Blockchain != nil {
+			l1Blockchain.Close()
+		}
+
 		// Stop RPC server if it was started
 		if rpcServer != nil {
 			rpcServer.Stop()

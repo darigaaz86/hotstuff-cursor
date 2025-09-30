@@ -52,6 +52,9 @@ type StateDB interface {
 	Snapshot() int
 	RevertToSnapshot(id int)
 
+	// Get current state root
+	GetStateRoot() hotstuff.Hash
+
 	// Commit changes and get state root
 	Commit() (hotstuff.Hash, error)
 
@@ -296,6 +299,11 @@ func (s *InMemoryStateDB) RevertToSnapshot(id int) {
 
 	// Clear journal
 	s.journal = s.journal[:0]
+}
+
+// GetStateRoot returns the current state root without committing
+func (s *InMemoryStateDB) GetStateRoot() hotstuff.Hash {
+	return s.calculateStateRoot()
 }
 
 // Commit finalizes the state changes and returns the state root

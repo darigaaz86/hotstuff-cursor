@@ -36,6 +36,7 @@ type EVMBlock struct {
 type EVMBlockHeader struct {
 	// Core Ethereum fields
 	Number      *big.Int      `json:"number"`           // Block number
+	ParentHash  hotstuff.Hash `json:"parentHash"`       // Hash of the parent block
 	StateRoot   hotstuff.Hash `json:"stateRoot"`        // Root hash of the state trie
 	TxRoot      hotstuff.Hash `json:"transactionsRoot"` // Root hash of transactions trie
 	ReceiptRoot hotstuff.Hash `json:"receiptsRoot"`     // Root hash of receipts trie

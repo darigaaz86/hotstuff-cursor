@@ -69,7 +69,7 @@ func NewViper() (*ExperimentConfig, error) {
 		RateStepInterval:    viper.GetDuration("rate-step-interval"),
 		ClientTimeout:       viper.GetDuration("client-timeout"),
 		UseTLS:              true,
-		
+
 		// RPC configuration
 		RPC:     viper.GetBool("rpc"),
 		RPCAddr: viper.GetString("rpc-addr"),

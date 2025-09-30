@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -94,9 +95,22 @@ func (a Address) ToTxpoolAddress() (txpool.Address, error) {
 		return txpool.Address{}, fmt.Errorf("invalid address length")
 	}
 
+	// Remove 0x prefix
+	hexStr := string(a)[2:]
+
+	// Decode hex string
+	bytes, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return txpool.Address{}, fmt.Errorf("invalid hex address: %v", err)
+	}
+
+	if len(bytes) != 20 {
+		return txpool.Address{}, fmt.Errorf("address must be 20 bytes, got %d", len(bytes))
+	}
+
 	var addr txpool.Address
-	_, err := fmt.Sscanf(string(a), "0x%040x", &addr)
-	return addr, err
+	copy(addr[:], bytes)
+	return addr, nil
 }
 
 // Hash represents a hash value
@@ -113,9 +127,22 @@ func (h Hash) ToHotstuffHash() (hotstuff.Hash, error) {
 		return hotstuff.Hash{}, fmt.Errorf("invalid hash length")
 	}
 
+	// Remove 0x prefix
+	hexStr := string(h)[2:]
+
+	// Decode hex string
+	bytes, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return hotstuff.Hash{}, fmt.Errorf("invalid hex hash: %v", err)
+	}
+
+	if len(bytes) != 32 {
+		return hotstuff.Hash{}, fmt.Errorf("hash must be 32 bytes, got %d", len(bytes))
+	}
+
 	var hash hotstuff.Hash
-	_, err := fmt.Sscanf(string(h), "0x%064x", &hash)
-	return hash, err
+	copy(hash[:], bytes)
+	return hash, nil
 }
 
 // Block represents an Ethereum block for JSON-RPC
